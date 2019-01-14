@@ -51,20 +51,18 @@ class IA:
         self.last_success_pos = (0, 0)
         return IA.get_random_pos(board)
 
-    def attack(self, board):
-        hit = True
-        while hit:
-            x, y = self.get_best_move(board)
+    def attack(self, board, explosion_sound):
+        x, y = self.get_best_move(board)
 
-            if board.content[x][y]["content"] == PLAYER_BOAT:
-                board.content[x][y]["content"] = WRECKAGE
-                board.content[x][y]["surface"] = board.wreckage_img
-                board.nb_player_down += 1
-                self.before_last_success_pos = self.last_success_pos
-                self.last_success_pos = (x, y)
-            else:
-                board.content[x][y]["content"] = WRECKAGE
-                board.content[x][y]["surface"] = board.missed_target
-                hit = False
-
-        return board.nb_player_down == NB_ELEMENTS_TO_TAKE_DOWN
+        explosion_sound.play()
+        if board.content[x][y]["content"] == PLAYER_BOAT:
+            board.content[x][y]["content"] = WRECKAGE
+            board.content[x][y]["surface"] = board.wreckage_img
+            board.nb_player_down += 1
+            self.before_last_success_pos = self.last_success_pos
+            self.last_success_pos = (x, y)
+            return True
+        else:
+            board.content[x][y]["content"] = WRECKAGE
+            board.content[x][y]["surface"] = board.missed_target
+            return False

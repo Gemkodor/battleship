@@ -2,6 +2,7 @@ import sys
 from random import randint
 
 import pygame
+import time
 from pygame.locals import *
 
 from Board import Board
@@ -22,6 +23,8 @@ class Game:
         self.enemy_board = Board()
         self.ia = IA()
         self.background = pygame.Surface(self.screen.get_size())
+        self.player_round = True
+        self.explosion_sound = pygame.mixer.Sound("assets/explosion.wav")
 
     @staticmethod
     def get_boats():
@@ -77,21 +80,37 @@ class Game:
         self.enemy_board.display(self.screen, RIGHT)
         pygame.display.flip()
         end_game = False
+
         while not end_game:
             event = pygame.event.wait()
 
             if event.type == QUIT:
                 sys.exit()
-            elif event.type == MOUSEBUTTONDOWN:
-                if self.enemy_board.is_valid_attack(event.pos):
-                    successful_attack = self.enemy_board.player_attack(event.pos)
-                    if self.enemy_board.nb_enemy_down == NB_ELEMENTS_TO_TAKE_DOWN:
-                        end_game = True
-                    elif not successful_attack:
-                        end_game = self.ia.attack(self.player_board)
+            elif self.player_round and event.type == MOUSEBUTTONDOWN and self.enemy_board.is_valid_attack(event.pos):
+                self.explosion_sound.play()
+                successful_attack = self.enemy_board.player_attack(event.pos)
+                self.update_game_screen()
+                if not successful_attack:
+                    self.player_round = False
+                if self.enemy_board.nb_enemy_down == NB_ELEMENTS_TO_TAKE_DOWN:
+                    end_game = True
 
-            self.screen.blit(self.background, (0, 0))
-            self.player_board.display(self.screen, LEFT)
-            self.enemy_board.display(self.screen, RIGHT)
-            pygame.display.flip()
+            if not self.player_round:
+                time.sleep(1)
+                while self.ia.attack(self.player_board, self.explosion_sound):
+                    self.update_game_screen()
+                    time.sleep(2)
+                self.player_round = True
+                if self.player_board.nb_player_down == NB_ELEMENTS_TO_TAKE_DOWN:
+                    end_game = True
 
+            if pygame.event.peek(MOUSEBUTTONDOWN):
+                pygame.event.clear(MOUSEBUTTONDOWN)
+
+            self.update_game_screen()
+
+    def update_game_screen(self):
+        self.screen.blit(self.background, (0, 0))
+        self.player_board.display(self.screen, LEFT)
+        self.enemy_board.display(self.screen, RIGHT)
+        pygame.display.flip()
