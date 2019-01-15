@@ -1,11 +1,12 @@
 import sys
+import time
 from random import randint
 
 import pygame
-import time
 from pygame.locals import *
 
 from Board import Board
+from HUD import HUD
 from IA import IA
 from boats.Battleship import Battleship
 from boats.Carrier import Carrier
@@ -19,6 +20,7 @@ class Game:
     def __init__(self, screen):
         self.screen = screen
         self.board = None
+        self.hud = HUD(screen)
         self.player_board = Board()
         self.enemy_board = Board()
         self.ia = IA()
@@ -58,6 +60,8 @@ class Game:
                 self.screen.blit(self.background, (0, 0))
                 self.player_board.display(self.screen)
                 boat.display(self.screen)
+                self.hud.draw("Placez vos bateaux", (700, 200))
+                self.hud.draw("Clic-droit pour changer de sens", (700, 250))
                 pygame.display.flip()
 
     def place_ia_boats(self):
@@ -93,24 +97,50 @@ class Game:
                 if not successful_attack:
                     self.player_round = False
                 if self.enemy_board.nb_enemy_down == NB_ELEMENTS_TO_TAKE_DOWN:
+                    self.show_end_game_screen(HUMAN_PLAYER)
                     end_game = True
 
             if not self.player_round:
+                self.update_game_screen()
                 time.sleep(1)
                 while self.ia.attack(self.player_board, self.explosion_sound):
                     self.update_game_screen()
-                    time.sleep(2)
+                    time.sleep(1)
                 self.player_round = True
                 if self.player_board.nb_player_down == NB_ELEMENTS_TO_TAKE_DOWN:
+                    self.show_end_game_screen(IA_PLAYER)
                     end_game = True
 
             if pygame.event.peek(MOUSEBUTTONDOWN):
                 pygame.event.clear(MOUSEBUTTONDOWN)
 
-            self.update_game_screen()
+            if not end_game:
+                self.update_game_screen()
 
     def update_game_screen(self):
         self.screen.blit(self.background, (0, 0))
         self.player_board.display(self.screen, LEFT)
         self.enemy_board.display(self.screen, RIGHT)
+        if self.player_round:
+            self.hud.draw("A vous de jouer !", (510, 700))
+        else:
+            self.hud.draw("L'ordinateur est en train de jouer !", (400, 700))
         pygame.display.flip()
+
+    def show_end_game_screen(self, winner):
+        return_to_menu = False
+        while not return_to_menu:
+            for event in pygame.event.get():
+                if event.type == QUIT:
+                    sys.exit()
+                if event.type == KEYDOWN:
+                    return_to_menu = True
+
+                self.screen.blit(self.background, (0, 0))
+                if winner == HUMAN_PLAYER:
+                    self.hud.draw("Bravo ! Vous avez gagné !", (450, 350))
+                else:
+                    self.hud.draw("Perdu ! L'ordinateur vous a battu !", (400, 350))
+
+                self.hud.draw("Appuyez sur une touche pour revenir au menu", (300, 700))
+                pygame.display.flip()

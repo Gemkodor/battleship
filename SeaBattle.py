@@ -5,6 +5,7 @@ from Menu import Menu
 from constants import *
 
 pygame.init()
+pygame.display.set_caption("Bataille navale")
 
 screen = pygame.display.set_mode((GAME_WIDTH, GAME_HEIGHT))
 menu = Menu(screen)
